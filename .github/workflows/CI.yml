@@ -28,9 +28,9 @@ jobs:
       - name: Build and test backend
         run: |
           cd back
-          ./mvnw clean install
-          ./mvnw clean test
-          ./mvnw clean test jacoco:report
+          mvn clean install
+          mvn clean test
+          mvn clean test jacoco:report
 
       - name: Upload JaCoCo coverage report
         uses: actions/upload-artifact@v4
