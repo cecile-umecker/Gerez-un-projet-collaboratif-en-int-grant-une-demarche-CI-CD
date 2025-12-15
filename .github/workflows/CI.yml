@@ -20,6 +20,11 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
+      - name: Install Maven
+        run: |
+          sudo apt update
+          sudo apt install maven -y
+          
       - name: Build and test backend
         run: |
           cd back
