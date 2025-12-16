@@ -38,6 +38,16 @@ jobs:
           cd back
           mvn jacoco:report
 
+      - name: Back - Check Coverage Threshold (80%)
+        run: |
+          cd back
+          COVERAGE=$(awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print int(100*covered/instructions) }' target/site/jacoco/jacoco.csv)
+          echo "Backend coverage: $COVERAGE%"
+          if [ "$COVERAGE" -lt 80 ]; then
+            echo "Error: Coverage is below 80% threshold"
+            exit 1
+          fi
+
       - name: Set up JDK 17 (pour Sonar Scanner)
         uses: actions/setup-java@v4
         with:
@@ -79,6 +89,16 @@ jobs:
         run: |
           cd front
           npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
+
+      - name: Front - Check Coverage Threshold (80%)
+        run: |
+          cd front
+          COVERAGE=$(grep -oP '(?<=Lines\s+:\s)\d+(?=\.\d+%)' coverage/bobapp/index.html | head -1)
+          echo "Frontend coverage: $COVERAGE%"
+          if [ "$COVERAGE" -lt 80 ]; then
+            echo "Error: Coverage is below 80% threshold"
+            exit 1
+          fi
 
       - name: Front - SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v4
