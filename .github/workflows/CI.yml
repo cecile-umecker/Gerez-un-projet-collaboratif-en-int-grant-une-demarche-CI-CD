@@ -38,6 +38,12 @@ jobs:
           cd back
           mvn jacoco:report
 
+      - name: Set up JDK 17 (pour Sonar Scanner)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Back - SonarCloud Scan
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
