@@ -9,9 +9,16 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    
+    env:
+      SONAR_ORG: "cecile-umecker"
+      SONAR_PROJECT_KEY_BACK: "cecile-umecker_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD-backend"
+      SONAR_PROJECT_KEY_FRONT: "cecile-umecker_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD-frontend"
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Backend
       - name: Set up JDK 11
@@ -19,13 +26,31 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-          
-      - name: Build and test backend
+          cache: maven
+
+      - name: Back - Build & Run Tests
         run: |
           cd back
-          mvn clean test jacoco:report
+          mvn clean verify
 
-      - name: Upload JaCoCo coverage report
+      - name: Back - Generate Coverage Report
+        run: |
+          cd back
+          mvn jacoco:report
+
+      - name: Back - SonarCloud Scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          cd back
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY_BACK }} \
+            -Dsonar.organization=${{ env.SONAR_ORG }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+      - name: Back - Upload Coverage Artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
@@ -36,18 +61,35 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '16.x'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
 
       - name: Install dependencies
         run: |
           cd front
           npm ci
 
-      - name: Run frontend tests with coverage
+      - name: Front - Run Tests & Generate Coverage
         run: |
           cd front
           npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
 
-      - name: Upload coverage report
+      - name: Front - SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: front
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY_FRONT }}
+            -Dsonar.organization=${{ env.SONAR_ORG }}
+            -Dsonar.sources=src
+            -Dsonar.tests=src
+            -Dsonar.test.inclusions=**/*.spec.ts
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+      - name: Front - Upload Coverage Artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
