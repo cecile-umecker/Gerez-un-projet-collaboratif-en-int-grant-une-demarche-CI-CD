@@ -30,18 +30,18 @@ jobs:
         working-directory: back
         run: mvn jacoco:report
 
-      - name: Set up JDK 17 (for Sonar Scanner)
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+      # We don't need JDK 17 explicitly here anymore, the Action handles its own Java runtime.
 
+      # CHANGED: Using the Generic Scanner Action (reads sonar-project.properties)
+      # instead of the Maven plugin (which requires pom.xml config)
       - name: SonarCloud Scan
-        working-directory: back
+        uses: SonarSource/sonarqube-scan-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        with:
+          projectBaseDir: back
+          # No 'args' needed: everything is in back/sonar-project.properties
 
       - name: Upload Backend Coverage
         uses: actions/upload-artifact@v4
@@ -84,4 +84,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
-          path: front/coverage/
+          path: front/coverage/bobapp/
