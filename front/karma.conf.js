@@ -32,6 +32,7 @@ module.exports = function (config) {
         { type: 'text-summary' },
         { type: 'lcovonly' } 
       ],
+      fixWebpackSourcePaths: true,
       check: {
         global: {
           statements: 20,
@@ -41,7 +42,7 @@ module.exports = function (config) {
         }
       }
     },
-    reporters: ['progress', 'kjhtml'],
+    reporters: ['progress', 'kjhtml', 'coverage'],
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
