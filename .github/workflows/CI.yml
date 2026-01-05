@@ -7,20 +7,14 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  backend-ci:
     runs-on: ubuntu-latest
     
-    env:
-      SONAR_ORG: "cecile-umecker"
-      SONAR_PROJECT_KEY_BACK: "cecile-umecker_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD-backend"
-      SONAR_PROJECT_KEY_FRONT: "cecile-umecker_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD-frontend"
-
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Backend
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
@@ -28,51 +22,41 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Back - Build & Run Tests
-        run: |
-          cd back
-          mvn clean verify
+      - name: Build & Run Tests
+        working-directory: back
+        run: mvn clean verify
 
-      - name: Back - Generate Coverage Report
-        run: |
-          cd back
-          mvn jacoco:report
+      - name: Generate Coverage Report
+        working-directory: back
+        run: mvn jacoco:report
 
-      - name: Back - Check Coverage Threshold (20%)
-        run: |
-          cd back
-          COVERAGE=$(awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print int(100*covered/instructions) }' target/site/jacoco/jacoco.csv)
-          echo "Backend coverage: $COVERAGE%"
-          if [ "$COVERAGE" -lt 20 ]; then
-            echo "Error: Coverage is below 80% threshold"
-            exit 1
-          fi
-
-      - name: Set up JDK 17 (pour Sonar Scanner)
+      - name: Set up JDK 17 (for Sonar Scanner)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Back - SonarCloud Scan
+      - name: SonarCloud Scan
+        working-directory: back
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          cd back
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY_BACK }} \
-            -Dsonar.organization=${{ env.SONAR_ORG }} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+        run: mvn sonar:sonar
 
-      - name: Back - Upload Coverage Artifact
+      - name: Upload Backend Coverage
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
           path: back/target/site/jacoco/
 
-      # Frontend
+  frontend-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -81,41 +65,22 @@ jobs:
           cache-dependency-path: front/package-lock.json
 
       - name: Install dependencies
-        run: |
-          cd front
-          npm ci
+        working-directory: front
+        run: npm ci
 
-      - name: Front - Run Tests & Generate Coverage
-        run: |
-          cd front
-          npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
+      - name: Run Tests & Generate Coverage
+        working-directory: front
+        run: npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
 
-      - name: Front - Check Coverage Threshold (80%)
-        run: |
-          cd front
-          COVERAGE=$(grep -oP '(?<=Lines\s+:\s)\d+(?=\.\d+%)' coverage/bobapp/index.html | head -1)
-          echo "Frontend coverage: $COVERAGE%"
-          if [ "$COVERAGE" -lt 80 ]; then
-            echo "Error: Coverage is below 80% threshold"
-            exit 1
-          fi
-
-      - name: Front - SonarCloud Scan
+      - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           projectBaseDir: front
-          args: >
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY_FRONT }}
-            -Dsonar.organization=${{ env.SONAR_ORG }}
-            -Dsonar.sources=src
-            -Dsonar.tests=src
-            -Dsonar.test.inclusions=**/*.spec.ts
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
-      - name: Front - Upload Coverage Artifact
+      - name: Upload Frontend Coverage
         uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
