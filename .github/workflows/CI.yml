@@ -30,10 +30,6 @@ jobs:
         working-directory: back
         run: mvn jacoco:report
 
-      # We don't need JDK 17 explicitly here anymore, the Action handles its own Java runtime.
-
-      # CHANGED: Using the Generic Scanner Action (reads sonar-project.properties)
-      # instead of the Maven plugin (which requires pom.xml config)
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
@@ -41,7 +37,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           projectBaseDir: back
-          # No 'args' needed: everything is in back/sonar-project.properties
+          args: >
+            -Dsonar.project.properties=back/sonar-project.properties
 
       - name: Upload Backend Coverage
         uses: actions/upload-artifact@v4
