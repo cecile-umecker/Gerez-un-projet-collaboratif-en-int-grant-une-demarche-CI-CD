@@ -38,7 +38,7 @@ jobs:
         with:
           projectBaseDir: back
           args: >
-            -Dsonar.project.properties=back/sonar-project.properties
+            -Dsonar.project.properties=sonar-project.properties
 
       - name: Upload Backend Coverage
         uses: actions/upload-artifact@v4
