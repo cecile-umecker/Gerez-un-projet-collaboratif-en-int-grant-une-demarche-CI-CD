@@ -30,6 +30,16 @@ jobs:
         working-directory: back
         run: mvn jacoco:report
 
+      - name: Debug - Verify properties file existence
+        run: |
+          ls -la back/
+          if [ -f "back/sonar-project.properties" ]; then
+            echo "✅ Fichier trouvé !"
+          else
+            echo "❌ ERREUR : Fichier back/sonar-project.properties introuvable."
+            exit 1
+          fi  
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
@@ -38,7 +48,7 @@ jobs:
         with:
           args: >
             -Dsonar.projectBaseDir=back
-            -Dsonar.project.properties=back/sonar-project.properties
+            -Dsonar.project.properties=sonar-project.properties
 
       - name: Upload Backend Coverage
         uses: actions/upload-artifact@v4
