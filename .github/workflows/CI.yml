@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -81,7 +79,7 @@ jobs:
           name: frontend-coverage
           path: front/coverage/bobapp/
 
-  backend-docker:
+  backend-cd:
     needs: backend-ci
     runs-on: ubuntu-latest
     steps:
@@ -100,7 +98,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/bobapp-backend:latest
 
-  frontend-docker:
+  frontend-cd:
     needs: frontend-ci
     runs-on: ubuntu-latest
     steps:
